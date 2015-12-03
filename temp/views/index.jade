@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  h1= title
+  a(href="./logout") Log out
+  p Hello, #{name}
+  p Welcome to #{title}
+  p #{food}
+  // Code below is by Feras Odeh (http://stackoverflow.com/questions/10151837/submit-jade-form)
+  div
+      form(action='/preference',method='post')
+        div(id='hiddendiv',data-role='fieldcontain')
+          fieldset(data-role='controlgroup')
+            label Food Type 01
+            input(name="food01",type='text')
+          fieldset(data-role='controlgroup')
+            label Food Type 02
+            input(name="food02",type='text')
+        div(data-role='fieldcontain')   
+          input(type='submit',value='Food Preference',data-transition='fade', data-theme='c')  
