@@ -163,6 +163,17 @@ app.get('/', isLoggedIn, function(req, res){
 
 app.get('/login', login.log);
 app.post('/login', routes.index);
+app.post('/preference', isLoggedIn, function(req, res){
+  
+  process.nextTick(function(){
+    User.update({"google.id": req.user.google.id}, {$set: {"foodPreference": req.body.food01}}, function(err){
+      if (err) {
+        return err;
+      }
+    });
+  });
+  res.redirect("/");
+});
 app.get('/users', user.list);
 
 http.createServer(app).listen(app.get('port'), function(){

@@ -16,7 +16,8 @@ var userSchema = mongoose.Schema({
         token: {type: String},
         name: {type: String},
         email: {type: String}
-    }
+    },
+    foodPreference: {type: Array, default: []}
 });
 
 userSchema.plugin(findOrCreate);
