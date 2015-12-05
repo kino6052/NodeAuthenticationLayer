@@ -17,7 +17,15 @@ var userSchema = mongoose.Schema({
         name: {type: String},
         email: {type: String}
     },
-    foodPreference: {type: Array, default: []}
+    foodPreference: {type: Array, default: []},
+    tokens: {
+        fitbit: {
+            access: {type: String, default: ""},
+            refresh: {type: String, default: ""}
+        },
+        delivery: {type: String},
+    },
+    address: {type: String}
 });
 
 userSchema.plugin(findOrCreate);
