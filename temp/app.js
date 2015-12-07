@@ -171,20 +171,21 @@ if ('development' == app.get('env')) {
 */
 
 app.get('/', isLoggedIn, function(req, res){
-  if (req.user.tokens.fitbit.refresh === "") { // user is not loged into fitbit account (no refresh token)
+  if (!req.user.address){
+    res.redirect("/address");
+  }
+  else if (!req.user.tokens.fitbit.refresh) { // user is not loged into fitbit account (no refresh token)
     res.redirect(OAuth2Urls.fitbitAuthUrl);
   }
-  else if (!req.user.delivery || !req.user.delivery.refreshToken) { // user is not loged into delivery account
-    res.send("It's time for delivery!");
+  else if (!req.user.tokens.delivery.refresh) { // user is not loged into delivery account
+    res.redirect(OAuth2Urls.deliveryAuthUrl);
   }
   routes.index(req, res);
 });
 
-
 /*
 *  LOGIN PAGE
 */
-
 app.get('/login', login.log);
 app.post('/login', routes.index);
 
@@ -193,7 +194,6 @@ app.post('/login', routes.index);
 *
 *  Where user provides their address
 */
-
 app.get('/address', address.address);
 
 app.post('/preference', isLoggedIn, function(req, res){
@@ -257,7 +257,160 @@ app.get('/auth/fitbit', function(req, res){
 });
 
 /*
-*  Google Authentication
+*  Delivery API Helper 
+*/
+
+// GET LOCAL MERCHANTS
+app.get('/delivery/getLocalMerchants', function(req, res){
+  needle
+    .get("https://api.delivery.com/merchant/search/delivery?client_id=" + req.query.client_id + "&address=" + req.query.address, 
+        function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          res.send(resp.body);
+        });
+});
+
+// GET MENUS FROM MERCHANTS
+app.get('/delivery/getMenusFromMerchants', function(req, res){
+  needle
+    .get("https://api.delivery.com/merchant/" + req.query.merchantId + "/menu?client_id=" + req.query.client_id, 
+        function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          res.send(resp.body);
+        });
+});
+
+// GET CART CONTENTS
+app.get('/delivery/getCartContents', function(req, res){
+  needle
+    .get("https://api.delivery.com/customer/cart/" + req.query.merchantId + "?client_id=" + req.query.client_id, {headers: {"Authorization": req.user.tokens.delivery.access}},
+        function(err, resp){
+          if (err) {
+            res.send({data:err, cart:req.user.cart});
+          }
+          res.send({data:resp.body, cart:req.user.cart});
+        });
+});
+
+// GET PAYMENT METHODS
+app.get('/delivery/getPaymentMethods', function(req, res){
+  needle
+    .get("https://api.delivery.com/customer/cc?client_id=" + req.query.client_id, {headers: {"Authorization": req.user.tokens.delivery.access}},
+        function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          res.send(resp.body);
+        });
+});
+
+// ADD ITEM TO CART
+app.post('/delivery/addToCart', function(req, res){
+   var options = {
+        headers: {
+          "Authorization": req.body.headers["Authorization"], 
+        }
+      };
+      needle
+        .post("https://api.delivery.com/customer/cart/" + req.body.merchantId, {
+                  "order_type": "delivery",
+                  "instructions": "",
+                  "item": {
+                    "item_id": req.body.item.item_id,
+                    "item_qty": 1
+                  },
+                  client_id: "Zjk0YzdhYzg3YTAyZmI1YTFkZjM0OGYyYWQwMDBmYzJl"}, options, function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          console.log("[AFTER REQUESTING TOKENS] BODY: " + JSON.stringify(resp.body));
+          res.send('Success!');
+          User.update({"google.id":req.user.google.id}, {$addToSet: {"cart": req.body.merchantId}}, function(err){
+            res.send(err);
+          });
+        }).on('end', function(err, resp){
+          if(err){
+            res.send(err);
+          }
+        });
+    
+});
+
+// PLACE ORDER
+app.post('/delivery/placeOrder', function(req, res){
+   var options = {
+        headers: {
+          "Authorization": req.body.headers["Authorization"], 
+        }
+      };
+      needle
+        .post("https://api.delivery.com/customer/cart/" + req.body.merchantId + "/checkout", 
+                {
+                  "tip": req.body.tip,
+                  "location_id": req.body.location_id,
+                  "uhau_id" : req.body.uhau_id,
+                  "instructions": "No instructions.",
+                  "payments": req.body.payments,
+                  "order_type": "delivery",
+                  "order_time": req.body.order_time
+                }, options, function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          console.log("[AFTER REQUESTING TOKENS] BODY: " + JSON.stringify(resp.body));
+          res.send('Order has been successfully placed!');
+        }).on('end', function(err, resp){
+          if(err){
+            res.send(err);
+          }
+        });
+});
+
+/*
+*  Delivery Authentication
+*/
+app.get('/auth/delivery', function(req, res){
+  if (req.query.code){ // about to request tokens
+    try{
+      // POSTing from the Server side
+      var options = {
+        
+      };
+      needle
+        .post(OAuth2Urls.deliveryTokenUrl + req.query.code, {}, options, function(err, resp){
+          if (err) {
+            res.send(err);
+          }
+          console.log("[AFTER REQUESTING TOKENS] BODY: " + JSON.stringify(resp.body));
+          User.update({"google.id":req.user.google.id}, {$set: {"tokens.delivery.access": resp.body.access_token}}, function(err){
+            res.send(err);
+          });
+          User.update({"google.id":req.user.google.id}, {$set: {"tokens.delivery.refresh": resp.body.refresh_token}}, function(err){
+            res.send(err);
+          });
+          
+          res.redirect('/');
+        }).on('end', function(err, resp){
+          if(err){
+            res.send(err);
+          }
+        });
+    }
+    catch(err){
+      res.send(err);
+    }
+  }
+  else { // tokens already requested
+    res.send(req.body);
+  }
+});
+
+/*
+*  GOOGLE AUTHENTICATION
 */
 
 app.get('/auth/google',
@@ -295,7 +448,6 @@ app.get('/logout', function(req, res){
 /*
 *  CREATE HTTP SERVER
 */
-
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });

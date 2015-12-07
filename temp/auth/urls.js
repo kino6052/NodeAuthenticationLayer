@@ -25,8 +25,27 @@ var fitbitTokenUrl = fitbitGetTokenData.url +
 "redirect_uri=" + fitbitGetTokenData.data.redirect_uri + 
 "code=";
 
+var deliveryAuthData = {
+	response_type: "response_type=code&",
+	client_id: "client_id=Zjk0YzdhYzg3YTAyZmI1YTFkZjM0OGYyYWQwMDBmYzJl&",
+	redirect_uri: "redirect_uri=" + encodeURIComponent("https://nodeauthentication-kino6052.c9.io/auth/delivery") + "&",
+	scope: "scope=global"
+};
+
+var deliveryAuthUrl = "https://www.delivery.com/third_party/authorize?" + deliveryAuthData.response_type + deliveryAuthData.client_id + deliveryAuthData.redirect_uri + deliveryAuthData.scope;
+
+var deliveryTokenUrl = "https://www.delivery.com/third_party/access_token?" + 
+deliveryAuthData.client_id +
+"client_secret=" + "yFza5dVFayUqE9z8TbJBroEAt014mqQy2Zt4N86r&" +
+"grant_type=" + "authorization_code&" +
+deliveryAuthData.redirect_uri +
+"code=";
+
 exports.urls = {
     fitbitAuthUrl: fitbitAuthUrl,
     fitbitTokenUrl: fitbitTokenUrl,
-    fitbitHeaders: fitbitGetTokenData.headers
+    fitbitHeaders: fitbitGetTokenData.headers,
+    
+    deliveryAuthUrl: deliveryAuthUrl,
+    deliveryTokenUrl: deliveryTokenUrl
 }; 

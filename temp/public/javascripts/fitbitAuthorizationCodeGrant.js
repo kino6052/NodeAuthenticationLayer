@@ -48,7 +48,7 @@ function getAccessTokenFitbit(){
 					},
 					
 					success: function(response){
-						$("#stats p").append(JSON.stringify(response));
+						console.log(response);
 					},
 					error: function(response){
 						alert("error");
@@ -59,6 +59,5 @@ function getAccessTokenFitbit(){
 	}
 
 $(function(){
-	$("#getdata").click(authorizationCodeGrant());
-	$("#button").click(getAccessTokenFitbit());
+	$("#getFitbitData").click(getAccessTokenFitbit());
 });

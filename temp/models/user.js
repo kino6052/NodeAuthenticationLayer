@@ -23,9 +23,13 @@ var userSchema = mongoose.Schema({
             access: {type: String, default: ""},
             refresh: {type: String, default: ""}
         },
-        delivery: {type: String},
+        delivery: {
+            access: {type: String, default: ""},
+            refresh: {type: String, default: ""}
+        },
     },
-    address: {type: String}
+    address: {type: String, default: "1178, Broadway 10001 New York"},
+    cart: {type: Array, default: []}
 });
 
 userSchema.plugin(findOrCreate);
